@@ -24,10 +24,13 @@ import {
   chat,
   type DBMessage,
   document,
+  driveFile,
+  googleAccount,
   message,
   type Suggestion,
   stream,
   suggestion,
+  travel,
   type User,
   user,
   vote,
@@ -40,7 +43,7 @@ import { generateHashedPassword } from "./utils";
 
 // biome-ignore lint: Forbidden non-null assertion.
 const client = postgres(process.env.POSTGRES_URL!);
-const db = drizzle(client);
+export const db = drizzle(client);
 
 export async function getUser(email: string): Promise<User[]> {
   try {
@@ -60,6 +63,28 @@ export async function createUser(email: string, password: string) {
     return await db.insert(user).values({ email, password: hashedPassword });
   } catch (_error) {
     throw new ChatSDKError("bad_request:database", "Failed to create user");
+  }
+}
+
+export async function findOrCreateUser(email: string) {
+  try {
+    const users = await getUser(email);
+    if (users.length > 0) {
+      return users[0];
+    }
+
+    // Create a new user without a password (OAuth user)
+    const [newUser] = await db
+      .insert(user)
+      .values({ email, password: null })
+      .returning();
+
+    return newUser;
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to find or create user"
+    );
   }
 }
 
@@ -588,6 +613,321 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
     throw new ChatSDKError(
       "bad_request:database",
       "Failed to get stream ids by chat id"
+    );
+  }
+}
+
+// Google Account queries
+
+export async function saveGoogleAccount({
+  userId,
+  googleId,
+  email,
+  accessToken,
+  refreshToken,
+  expiresAt,
+}: {
+  userId: string;
+  googleId: string;
+  email: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt?: Date;
+}) {
+  try {
+    return await db
+      .insert(googleAccount)
+      .values({
+        userId,
+        googleId,
+        email,
+        accessToken,
+        refreshToken,
+        tokenExpiresAt: expiresAt,
+      })
+      .onConflictDoUpdate({
+        target: googleAccount.googleId,
+        set: {
+          userId,
+          email,
+          accessToken,
+          refreshToken,
+          tokenExpiresAt: expiresAt,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to save Google account"
+    );
+  }
+}
+
+export async function getGoogleAccount({ userId }: { userId: string }) {
+  try {
+    const accounts = await db
+      .select()
+      .from(googleAccount)
+      .where(eq(googleAccount.userId, userId))
+      .limit(1);
+
+    return accounts[0];
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get Google account"
+    );
+  }
+}
+
+export async function updateGoogleTokens({
+  userId,
+  accessToken,
+  refreshToken,
+  expiresAt,
+}: {
+  userId: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: Date;
+}) {
+  try {
+    return await db
+      .update(googleAccount)
+      .set({
+        ...(accessToken && { accessToken }),
+        ...(refreshToken && { refreshToken }),
+        ...(expiresAt && { tokenExpiresAt: expiresAt }),
+        updatedAt: new Date(),
+      })
+      .where(eq(googleAccount.userId, userId))
+      .returning();
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to update Google tokens"
+    );
+  }
+}
+
+export async function deleteGoogleAccount({ userId }: { userId: string }) {
+  try {
+    return await db
+      .delete(googleAccount)
+      .where(eq(googleAccount.userId, userId))
+      .returning();
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to delete Google account"
+    );
+  }
+}
+
+// Travel queries
+
+export async function createTravel({
+  userId,
+  name,
+}: {
+  userId: string;
+  name: string;
+}) {
+  try {
+    return await db
+      .insert(travel)
+      .values({
+        userId,
+        name,
+      })
+      .returning();
+  } catch (_error) {
+    throw new ChatSDKError("bad_request:database", "Failed to create travel");
+  }
+}
+
+export async function updateTravel({
+  id,
+  data,
+}: {
+  id: string;
+  data: { name?: string; isActive?: boolean; driveFolderId?: string };
+}) {
+  try {
+    return await db
+      .update(travel)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(travel.id, id))
+      .returning();
+  } catch (_error) {
+    throw new ChatSDKError("bad_request:database", "Failed to update travel");
+  }
+}
+
+export async function getActiveTravel({ userId }: { userId: string }) {
+  try {
+    const travels = await db
+      .select()
+      .from(travel)
+      .where(and(eq(travel.userId, userId), eq(travel.isActive, true)))
+      .limit(1);
+
+    return travels[0];
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get active travel"
+    );
+  }
+}
+
+export async function setActiveTravel({
+  userId,
+  travelId,
+}: {
+  userId: string;
+  travelId: string;
+}) {
+  try {
+    await db
+      .update(travel)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(travel.userId, userId));
+
+    return await db
+      .update(travel)
+      .set({ isActive: true, updatedAt: new Date() })
+      .where(eq(travel.id, travelId))
+      .returning();
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to set active travel"
+    );
+  }
+}
+
+export async function getTravels({ userId }: { userId: string }) {
+  try {
+    return await db
+      .select()
+      .from(travel)
+      .where(eq(travel.userId, userId))
+      .orderBy(desc(travel.createdAt));
+  } catch (_error) {
+    throw new ChatSDKError("bad_request:database", "Failed to get travels");
+  }
+}
+
+// Drive file queries
+
+export async function saveDriveFile({
+  travelId,
+  driveFileId,
+  name,
+  mimeType,
+  webViewLink,
+}: {
+  travelId: string;
+  driveFileId: string;
+  name: string;
+  mimeType?: string;
+  webViewLink?: string;
+}) {
+  try {
+    return await db
+      .insert(driveFile)
+      .values({
+        travelId,
+        driveFileId,
+        name,
+        mimeType,
+        webViewLink,
+        syncStatus: "synced",
+        lastSyncedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: driveFile.driveFileId,
+        set: {
+          name,
+          mimeType,
+          webViewLink,
+          syncStatus: "synced",
+          lastSyncedAt: new Date(),
+        },
+      })
+      .returning();
+  } catch (_error) {
+    throw new ChatSDKError("bad_request:database", "Failed to save Drive file");
+  }
+}
+
+export async function getDriveFiles({ travelId }: { travelId: string }) {
+  try {
+    return await db
+      .select()
+      .from(driveFile)
+      .where(eq(driveFile.travelId, travelId))
+      .orderBy(desc(driveFile.createdAt));
+  } catch (_error) {
+    throw new ChatSDKError("bad_request:database", "Failed to get Drive files");
+  }
+}
+
+export async function updateDriveFile({
+  id,
+  data,
+}: {
+  id: string;
+  data: { documentId?: string; syncStatus?: "synced" | "pending" | "error" };
+}) {
+  try {
+    return await db
+      .update(driveFile)
+      .set(data)
+      .where(eq(driveFile.id, id))
+      .returning();
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to update Drive file"
+    );
+  }
+}
+
+export async function deleteDriveFile({ id }: { id: string }) {
+  try {
+    return await db.delete(driveFile).where(eq(driveFile.id, id)).returning();
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to delete Drive file"
+    );
+  }
+}
+
+export async function linkDriveFileToDocument({
+  driveFileId,
+  documentId,
+}: {
+  driveFileId: string;
+  documentId: string;
+}) {
+  try {
+    return await db
+      .update(driveFile)
+      .set({ documentId })
+      .where(eq(driveFile.driveFileId, driveFileId))
+      .returning();
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to link Drive file to document"
     );
   }
 }
