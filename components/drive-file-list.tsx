@@ -76,6 +76,7 @@ export function DriveFileList({ files, onRefresh }: DriveFileListProps) {
           mimeType?: string;
           webViewLink?: string;
           createdAt?: string;
+          hasParsedDocument?: boolean;
         };
 
         return (
@@ -107,13 +108,18 @@ export function DriveFileList({ files, onRefresh }: DriveFileListProps) {
                     </a>
                   </Button>
                 )}
-                <Button asChild size="sm" variant="outline">
-                  <Link href={`/parsed/${driveFile.driveFileId}`}>
-                    <Eye className="mr-2 h-3 w-3" />
-                    View Parsed
-                  </Link>
-                </Button>
-                <ParseDocumentButton driveFileId={driveFile.driveFileId} />
+                {driveFile.hasParsedDocument && (
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={`/parsed/${driveFile.driveFileId}`}>
+                      <Eye className="mr-2 h-3 w-3" />
+                      View Parsed
+                    </Link>
+                  </Button>
+                )}
+                <ParseDocumentButton
+                  driveFileId={driveFile.driveFileId}
+                  onRefresh={onRefresh}
+                />
                 <Button
                   onClick={() =>
                     handleDeleteClick(driveFile.driveFileId, driveFile.name)

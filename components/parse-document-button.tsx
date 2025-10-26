@@ -16,7 +16,13 @@ import { chatModels } from "@/lib/ai/models";
 
 type ParseStatus = "idle" | "parsing" | "completed" | "failed";
 
-export function ParseDocumentButton({ driveFileId }: { driveFileId: string }) {
+export function ParseDocumentButton({
+  driveFileId,
+  onRefresh,
+}: {
+  driveFileId: string;
+  onRefresh?: () => void;
+}) {
   const router = useRouter();
   const [status, setStatus] = useState<ParseStatus>("idle");
   const [jobId, setJobId] = useState<string | null>(null);
@@ -40,6 +46,11 @@ export function ParseDocumentButton({ driveFileId }: { driveFileId: string }) {
             });
             clearInterval(interval);
 
+            // Refresh file list to show "View Parsed" button
+            if (onRefresh) {
+              await onRefresh();
+            }
+
             // Navigate to parsed document page
             router.push(`/parsed/${driveFileId}`);
           } else if (data.status === "failed") {
@@ -57,7 +68,7 @@ export function ParseDocumentButton({ driveFileId }: { driveFileId: string }) {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [jobId, status, driveFileId, router]);
+  }, [jobId, status, driveFileId, router, onRefresh]);
 
   const handleParse = async () => {
     setStatus("parsing");
