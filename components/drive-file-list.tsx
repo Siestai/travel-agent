@@ -1,8 +1,10 @@
 "use client";
 
-import { ExternalLink, Trash2 } from "lucide-react";
+import { ExternalLink, Eye, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
+import { ParseDocumentButton } from "@/components/parse-document-button";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -74,6 +76,7 @@ export function DriveFileList({ files, onRefresh }: DriveFileListProps) {
           mimeType?: string;
           webViewLink?: string;
           createdAt?: string;
+          hasParsedDocument?: boolean;
         };
 
         return (
@@ -92,7 +95,7 @@ export function DriveFileList({ files, onRefresh }: DriveFileListProps) {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {driveFile.webViewLink && (
                   <Button asChild size="sm" variant="outline">
                     <a
@@ -105,6 +108,18 @@ export function DriveFileList({ files, onRefresh }: DriveFileListProps) {
                     </a>
                   </Button>
                 )}
+                {driveFile.hasParsedDocument && (
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={`/parsed/${driveFile.driveFileId}`}>
+                      <Eye className="mr-2 h-3 w-3" />
+                      View Parsed
+                    </Link>
+                  </Button>
+                )}
+                <ParseDocumentButton
+                  driveFileId={driveFile.driveFileId}
+                  onRefresh={onRefresh}
+                />
                 <Button
                   onClick={() =>
                     handleDeleteClick(driveFile.driveFileId, driveFile.name)

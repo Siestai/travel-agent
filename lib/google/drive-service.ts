@@ -100,6 +100,21 @@ export async function getFile(
   return response.data;
 }
 
+export async function downloadFile(
+  driveClient: drive_v3.Drive,
+  fileId: string
+): Promise<Buffer> {
+  const response = await driveClient.files.get(
+    {
+      fileId,
+      alt: "media",
+    },
+    { responseType: "arraybuffer" }
+  );
+
+  return Buffer.from(response.data as ArrayBuffer);
+}
+
 export async function getFileMetadata(
   driveClient: drive_v3.Drive,
   fileId: string
