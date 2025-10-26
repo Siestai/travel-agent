@@ -54,9 +54,22 @@ You can deploy your own version of the Next.js AI Chatbot to Vercel with one cli
 
 ## Running locally
 
-You will need to use the environment variables [defined in `.env.example`](.env.example) to run Next.js AI Chatbot. It's recommended you use [Vercel Environment Variables](https://vercel.com/docs/projects/environment-variables) for this, but a `.env` file is all that is necessary.
+You will need to use the environment variables to run Next.js AI Chatbot. It's recommended you use [Vercel Environment Variables](https://vercel.com/docs/projects/environment-variables) for this, but a `.env.local` file is all that is necessary.
 
-> Note: You should not commit your `.env` file or it will expose secrets that will allow others to control access to your various AI and authentication provider accounts.
+> Note: You should not commit your `.env.local` file or it will expose secrets that will allow others to control access to your various AI and authentication provider accounts.
+
+### Required Environment Variables
+
+- `POSTGRES_URL` - PostgreSQL database connection string
+- `NEXTAUTH_SECRET` - Secret for NextAuth.js authentication
+- `NEXTAUTH_URL` - Your application URL (e.g., http://localhost:3000)
+
+### Optional Environment Variables
+
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` - For Google Maps integration ([setup guide](./docs/google-maps-setup.md))
+- `AI_GATEWAY_API_KEY` - For non-Vercel deployments
+
+### Setup Steps
 
 1. Install Vercel CLI: `npm i -g vercel`
 2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
@@ -68,3 +81,7 @@ pnpm dev
 ```
 
 Your app template should now be running on [localhost:3000](http://localhost:3000).
+
+### Google Maps Setup
+
+For travel map visualization, you need a Google Maps API key. See the [Google Maps Setup Guide](./docs/google-maps-setup.md) for detailed instructions.
