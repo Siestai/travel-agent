@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Calendar,
   FolderOpen,
   Map as MapIcon,
   MessageSquare,
@@ -19,6 +20,7 @@ const navItems = [
   { title: "Drive", href: "/drive", icon: FolderOpen },
   { title: "Chat", href: "/chat", icon: MessageSquare },
   { title: "Maps", href: "/maps", icon: MapIcon },
+  { title: "Timeline", href: "/timeline", icon: Calendar },
   { title: "Settings", href: "/settings", icon: Settings },
 ];
 

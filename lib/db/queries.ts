@@ -1036,17 +1036,53 @@ export async function saveParsedDocument({
       .limit(1);
 
     if (existing[0]) {
+      // Sanitize rawText to remove null bytes and other invalid UTF-8 characters
+      const sanitizedRawText = rawText
+        ? rawText
+            .split("")
+            .filter((char) => {
+              const code = char.charCodeAt(0);
+              // Keep all printable characters (32-126) and allow UTF-8 beyond 127
+              // Remove control characters (0-31) and DEL (127)
+              return (
+                code === 9 ||
+                code === 10 ||
+                code === 13 ||
+                (code >= 32 && code !== 127)
+              );
+            })
+            .join("")
+        : null;
+
       return await db
         .update(parsedDocument)
         .set({
           parsedData,
           confidence,
-          rawText: rawText || null,
+          rawText: sanitizedRawText,
           updatedAt: new Date(),
         })
         .where(eq(parsedDocument.driveFileId, driveFileId))
         .returning();
     }
+
+    // Sanitize rawText to remove null bytes and other invalid UTF-8 characters
+    const sanitizedRawText = rawText
+      ? rawText
+          .split("")
+          .filter((char) => {
+            const code = char.charCodeAt(0);
+            // Keep all printable characters (32-126) and allow UTF-8 beyond 127
+            // Remove control characters (0-31) and DEL (127)
+            return (
+              code === 9 ||
+              code === 10 ||
+              code === 13 ||
+              (code >= 32 && code !== 127)
+            );
+          })
+          .join("")
+      : null;
 
     return await db
       .insert(parsedDocument)
@@ -1056,14 +1092,24 @@ export async function saveParsedDocument({
         documentType,
         parsedData,
         confidence,
-        rawText: rawText || null,
+        rawText: sanitizedRawText,
         inngestJobId,
       })
       .returning();
-  } catch (_error) {
+  } catch (error) {
+    console.error("Error saving parsed document:", error);
+    console.error("Attempted values:", {
+      driveFileId,
+      userId,
+      documentType,
+      parsedData,
+      confidence,
+      rawText,
+      inngestJobId,
+    });
     throw new ChatSDKError(
       "bad_request:database",
-      "Failed to save parsed document"
+      `Failed to save parsed document: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 }

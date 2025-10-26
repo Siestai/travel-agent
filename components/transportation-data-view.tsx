@@ -18,6 +18,42 @@ import {
 } from "@/components/ui/select";
 import type { TransportationDocument } from "@/lib/parser/schemas";
 
+const getCurrencySymbol = (currency?: string): string => {
+  const currencyMap: Record<string, string> = {
+    USD: "$",
+    EUR: "€",
+    GBP: "£",
+    JPY: "¥",
+    CNY: "¥",
+    INR: "₹",
+    KRW: "₩",
+    THB: "฿",
+    SGD: "S$",
+    MYR: "RM",
+    IDR: "Rp",
+    PHP: "₱",
+    VND: "₫",
+    AUD: "A$",
+    CAD: "C$",
+    NZD: "NZ$",
+    HKD: "HK$",
+    CHF: "CHF",
+    MXN: "$",
+    BRL: "R$",
+    ZAR: "R",
+    AED: "د.إ",
+    SAR: "﷼",
+    TRY: "₺",
+    RUB: "₽",
+    PLN: "zł",
+    CZK: "Kč",
+    SEK: "kr",
+    NOK: "kr",
+    DKK: "kr",
+  };
+  return currencyMap[currency?.toUpperCase() || ""] || "$";
+};
+
 export function TransportationDataView({
   data,
   isEditing,
@@ -203,7 +239,12 @@ export function TransportationDataView({
               {transportationData.currency || "USD"}
             </CardDescription>
           </CardHeader>
-          <CardContent>${transportationData.totalAmount}</CardContent>
+          <CardContent>
+            {getCurrencySymbol(
+              transportationData.currency as string | undefined
+            )}
+            {transportationData.totalAmount}
+          </CardContent>
         </Card>
       )}
     </div>

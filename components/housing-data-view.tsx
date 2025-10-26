@@ -12,6 +12,42 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { HousingDocument } from "@/lib/parser/schemas";
 
+const getCurrencySymbol = (currency?: string): string => {
+  const currencyMap: Record<string, string> = {
+    USD: "$",
+    EUR: "€",
+    GBP: "£",
+    JPY: "¥",
+    CNY: "¥",
+    INR: "₹",
+    KRW: "₩",
+    THB: "฿",
+    SGD: "S$",
+    MYR: "RM",
+    IDR: "Rp",
+    PHP: "₱",
+    VND: "₫",
+    AUD: "A$",
+    CAD: "C$",
+    NZD: "NZ$",
+    HKD: "HK$",
+    CHF: "CHF",
+    MXN: "$",
+    BRL: "R$",
+    ZAR: "R",
+    AED: "د.إ",
+    SAR: "﷼",
+    TRY: "₺",
+    RUB: "₽",
+    PLN: "zł",
+    CZK: "Kč",
+    SEK: "kr",
+    NOK: "kr",
+    DKK: "kr",
+  };
+  return currencyMap[currency?.toUpperCase() || ""] || "$";
+};
+
 export function HousingDataView({
   data,
   isEditing,
@@ -170,7 +206,10 @@ export function HousingDataView({
             <CardTitle>Total Amount</CardTitle>
             <CardDescription>{housingData.currency || "USD"}</CardDescription>
           </CardHeader>
-          <CardContent>${housingData.totalAmount}</CardContent>
+          <CardContent>
+            {getCurrencySymbol(housingData.currency as string | undefined)}
+            {housingData.totalAmount}
+          </CardContent>
         </Card>
       )}
       {housingData.numberOfGuests && (
