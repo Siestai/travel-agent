@@ -684,7 +684,7 @@ export async function getGoogleAccount({ userId }: { userId: string }) {
   }
 }
 
-export async function updateGoogleTokens({
+export async function updateGoogleAccount({
   userId,
   accessToken,
   refreshToken,

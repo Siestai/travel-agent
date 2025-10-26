@@ -12,8 +12,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { TravelConnection } from "@/lib/types/travel";
 
-// Declare google.maps for TypeScript
-declare const google: typeof import("@types/google.maps");
+// Google Maps types will be available at runtime when LoadScript loads the API
 
 type TravelNode = {
   id: string;
@@ -70,6 +69,8 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [routeLines, setRouteLines] = useState<RouteLine[]>([]);
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
+  const [selectedConnection, setSelectedConnection] =
+    useState<RouteLine | null>(null);
   const [mapCenter, setMapCenter] = useState({ lat: 41.2753, lng: 28.7519 });
   const [showAnimation, setShowAnimation] = useState(false);
   const [userLocation, setUserLocation] = useState<{
@@ -144,6 +145,12 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
     }
   }, [nodes, connections]);
 
+  // Close modal when clicking on the map
+  const handleMapClick = () => {
+    setSelectedMarker(null);
+    setSelectedConnection(null);
+  };
+
   // Generate Google Maps URL for trip
   const createGoogleMapsTripUrl = (): string => {
     // Create waypoint URLs
@@ -201,6 +208,7 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
         <GoogleMap
           center={mapCenter}
           mapContainerStyle={mapContainerStyle}
+          onClick={handleMapClick}
           options={mapOptions}
           zoom={markers.length > 1 ? 4 : 10}
         >
@@ -208,6 +216,10 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
           {routeLines.map((line) => (
             <Polyline
               key={line.connection.id}
+              onClick={() => {
+                setSelectedConnection(line);
+                setSelectedMarker(null);
+              }}
               options={{
                 strokeColor: "#3b82f6",
                 strokeWeight: 3,
@@ -233,6 +245,7 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
 
           {/* Render user location marker */}
           {userLocation && (
+            // @ts-expect-error - Google Maps API requires specific types
             <Marker
               icon={{
                 url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
@@ -241,8 +254,8 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
                     <circle cx="16" cy="16" r="3" fill="#ffffff"/>
                   </svg>`
                 )}`,
-                scaledSize: new google.maps.Size(32, 32),
-                anchor: new google.maps.Point(16, 16),
+                scaledSize: { width: 32, height: 32 },
+                anchor: { x: 16, y: 16 },
               }}
               key="user-location"
               onClick={() => {
@@ -262,6 +275,62 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
             />
           ))}
 
+          {/* Connection info modal */}
+          {selectedConnection && (
+            <InfoWindow
+              onCloseClick={() => setSelectedConnection(null)}
+              position={{
+                lat:
+                  (selectedConnection.from.lat + selectedConnection.to.lat) / 2,
+                lng:
+                  (selectedConnection.from.lng + selectedConnection.to.lng) / 2,
+              }}
+            >
+              <div className="p-2">
+                <h3 className="font-semibold text-gray-900">
+                  {selectedConnection.connection.type.toUpperCase()} Connection
+                </h3>
+                {selectedConnection.connection.departureTime && (
+                  <p className="text-gray-700 text-xs">
+                    <span className="font-semibold">Departure:</span> {(() => {
+                      const date = new Date(
+                        selectedConnection.connection.departureTime
+                      );
+                      return Number.isNaN(date.getTime())
+                        ? selectedConnection.connection.departureTime
+                        : date.toLocaleString();
+                    })()}
+                  </p>
+                )}
+                {selectedConnection.connection.arrivalTime && (
+                  <p className="text-gray-700 text-xs">
+                    <span className="font-semibold">Arrival:</span> {(() => {
+                      const date = new Date(
+                        selectedConnection.connection.arrivalTime
+                      );
+                      return Number.isNaN(date.getTime())
+                        ? selectedConnection.connection.arrivalTime
+                        : date.toLocaleString();
+                    })()}
+                  </p>
+                )}
+                {selectedConnection.connection.carrier && (
+                  <p className="text-gray-700 text-xs">
+                    <span className="font-semibold">Carrier:</span>{" "}
+                    {selectedConnection.connection.carrier}
+                  </p>
+                )}
+                {selectedConnection.connection.bookingReference && (
+                  <p className="text-gray-700 text-xs">
+                    <span className="font-semibold">Booking:</span>{" "}
+                    {selectedConnection.connection.bookingReference}
+                  </p>
+                )}
+              </div>
+            </InfoWindow>
+          )}
+
+          {/* Location info modal */}
           {selectedMarker && (
             <InfoWindow
               onCloseClick={() => setSelectedMarker(null)}
@@ -274,24 +343,75 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
                 <p className="text-gray-700 text-sm">
                   {selectedMarker.documentTitle}
                 </p>
-                {selectedMarker.checkIn && selectedMarker.checkOut && (
-                  <p className="text-gray-600 text-xs">
-                    {new Date(selectedMarker.checkIn).toLocaleDateString()} -{" "}
-                    {new Date(selectedMarker.checkOut).toLocaleDateString()}
-                  </p>
-                )}
-                {selectedMarker.departureTime && (
-                  <p className="text-gray-600 text-xs">
-                    Departure:{" "}
-                    {new Date(selectedMarker.departureTime).toLocaleString()}
-                  </p>
-                )}
-                {selectedMarker.arrivalTime && (
-                  <p className="text-gray-600 text-xs">
-                    Arrival:{" "}
-                    {new Date(selectedMarker.arrivalTime).toLocaleString()}
-                  </p>
-                )}
+                <div className="mt-2 space-y-1">
+                  {selectedMarker.address && (
+                    <p className="text-gray-700 text-xs">
+                      <span className="font-semibold">Address:</span>{" "}
+                      {selectedMarker.address}
+                    </p>
+                  )}
+                  {selectedMarker.checkIn && selectedMarker.checkOut && (
+                    <>
+                      <p className="text-gray-700 text-xs">
+                        <span className="font-semibold">Check-in:</span>{" "}
+                        {(() => {
+                          const date = new Date(selectedMarker.checkIn);
+                          return Number.isNaN(date.getTime())
+                            ? selectedMarker.checkIn
+                            : date.toLocaleString();
+                        })()}
+                      </p>
+                      <p className="text-gray-700 text-xs">
+                        <span className="font-semibold">Check-out:</span>{" "}
+                        {(() => {
+                          const date = new Date(selectedMarker.checkOut);
+                          return Number.isNaN(date.getTime())
+                            ? selectedMarker.checkOut
+                            : date.toLocaleString();
+                        })()}
+                      </p>
+                      <p className="text-gray-600 text-xs">
+                        Duration: {(() => {
+                          const checkInDate = new Date(selectedMarker.checkIn);
+                          const checkOutDate = new Date(
+                            selectedMarker.checkOut
+                          );
+                          const isValid =
+                            !Number.isNaN(checkInDate.getTime()) &&
+                            !Number.isNaN(checkOutDate.getTime());
+                          return isValid
+                            ? Math.ceil(
+                                (checkOutDate.getTime() -
+                                  checkInDate.getTime()) /
+                                  (1000 * 60 * 60 * 24)
+                              )
+                            : "N/A";
+                        })()} nights
+                      </p>
+                    </>
+                  )}
+                  {selectedMarker.departureTime && (
+                    <p className="text-gray-700 text-xs">
+                      <span className="font-semibold">Departure:</span>{" "}
+                      {(() => {
+                        const date = new Date(selectedMarker.departureTime);
+                        return Number.isNaN(date.getTime())
+                          ? selectedMarker.departureTime
+                          : date.toLocaleString();
+                      })()}
+                    </p>
+                  )}
+                  {selectedMarker.arrivalTime && (
+                    <p className="text-gray-700 text-xs">
+                      <span className="font-semibold">Arrival:</span> {(() => {
+                        const date = new Date(selectedMarker.arrivalTime);
+                        return Number.isNaN(date.getTime())
+                          ? selectedMarker.arrivalTime
+                          : date.toLocaleString();
+                      })()}
+                    </p>
+                  )}
+                </div>
               </div>
             </InfoWindow>
           )}
