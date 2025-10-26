@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  FileText,
+  FolderOpen,
   Map as MapIcon,
   MessageSquare,
   Settings,
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
-  { title: "Documents", href: "/documents", icon: FileText },
+  { title: "Drive", href: "/drive", icon: FolderOpen },
   { title: "Chat", href: "/chat", icon: MessageSquare },
   { title: "Maps", href: "/maps", icon: MapIcon },
   { title: "Settings", href: "/settings", icon: Settings },

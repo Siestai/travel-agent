@@ -171,3 +171,50 @@ export const stream = pgTable(
 );
 
 export type Stream = InferSelectModel<typeof stream>;
+
+export const googleAccount = pgTable("GoogleAccount", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  googleId: text("googleId").notNull().unique(),
+  email: varchar("email", { length: 255 }).notNull(),
+  accessToken: text("accessToken").notNull(),
+  refreshToken: text("refreshToken").notNull(),
+  tokenExpiresAt: timestamp("tokenExpiresAt"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type GoogleAccount = InferSelectModel<typeof googleAccount>;
+
+export const travel = pgTable("Travel", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  name: text("name").notNull(),
+  driveFolderId: text("driveFolderId"),
+  isActive: boolean("isActive").notNull().default(false),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type Travel = InferSelectModel<typeof travel>;
+
+export const driveFile = pgTable("DriveFile", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  travelId: uuid("travelId")
+    .notNull()
+    .references(() => travel.id),
+  driveFileId: text("driveFileId").notNull().unique(),
+  name: text("name").notNull(),
+  mimeType: varchar("mimeType", { length: 100 }),
+  webViewLink: text("webViewLink"),
+  documentId: uuid("documentId"),
+  syncStatus: varchar("syncStatus", { enum: ["synced", "pending", "error"] })
+    .notNull()
+    .default("pending"),
+  lastSyncedAt: timestamp("lastSyncedAt"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
