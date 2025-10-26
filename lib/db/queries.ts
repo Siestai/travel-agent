@@ -26,7 +26,9 @@ import {
   document,
   driveFile,
   googleAccount,
+  inngestStatus,
   message,
+  parsedDocument,
   type Suggestion,
   stream,
   suggestion,
@@ -928,6 +930,191 @@ export async function linkDriveFileToDocument({
     throw new ChatSDKError(
       "bad_request:database",
       "Failed to link Drive file to document"
+    );
+  }
+}
+
+// Inngest status queries
+
+export async function saveInngestStatus({
+  jobId,
+  userId,
+  jobType,
+  metadata,
+}: {
+  jobId: string;
+  userId: string;
+  jobType: string;
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    return await db
+      .insert(inngestStatus)
+      .values({
+        jobId,
+        userId,
+        jobType,
+        metadata: metadata || null,
+      })
+      .returning();
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to save Inngest status"
+    );
+  }
+}
+
+export async function updateInngestStatus({
+  jobId,
+  status,
+  error,
+}: {
+  jobId: string;
+  status: "pending" | "running" | "completed" | "failed";
+  error?: string;
+}) {
+  try {
+    return await db
+      .update(inngestStatus)
+      .set({
+        status,
+        error: error || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(inngestStatus.jobId, jobId))
+      .returning();
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to update Inngest status"
+    );
+  }
+}
+
+export async function getInngestStatusByJobId({ jobId }: { jobId: string }) {
+  try {
+    const results = await db
+      .select()
+      .from(inngestStatus)
+      .where(eq(inngestStatus.jobId, jobId))
+      .limit(1);
+    return results[0] || null;
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get Inngest status"
+    );
+  }
+}
+
+// Parsed document queries
+
+export async function saveParsedDocument({
+  driveFileId,
+  userId,
+  documentType,
+  parsedData,
+  confidence,
+  rawText,
+  inngestJobId,
+}: {
+  driveFileId: string;
+  userId: string;
+  documentType: "housing" | "transportation";
+  parsedData: Record<string, unknown>;
+  confidence: string;
+  rawText: string | null;
+  inngestJobId: string;
+}) {
+  try {
+    // Check if already exists and update, otherwise insert
+    const existing = await db
+      .select()
+      .from(parsedDocument)
+      .where(eq(parsedDocument.driveFileId, driveFileId))
+      .limit(1);
+
+    if (existing[0]) {
+      return await db
+        .update(parsedDocument)
+        .set({
+          parsedData,
+          confidence,
+          rawText: rawText || null,
+          updatedAt: new Date(),
+        })
+        .where(eq(parsedDocument.driveFileId, driveFileId))
+        .returning();
+    }
+
+    return await db
+      .insert(parsedDocument)
+      .values({
+        driveFileId,
+        userId,
+        documentType,
+        parsedData,
+        confidence,
+        rawText: rawText || null,
+        inngestJobId,
+      })
+      .returning();
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to save parsed document"
+    );
+  }
+}
+
+export async function getParsedDocumentByDriveFileId({
+  driveFileId,
+}: {
+  driveFileId: string;
+}) {
+  try {
+    // First get the DB id from the drive file
+    const driveFiles = await db
+      .select()
+      .from(driveFile)
+      .where(eq(driveFile.driveFileId, driveFileId))
+      .limit(1);
+
+    if (!driveFiles[0]) {
+      return null;
+    }
+
+    const parsedDocs = await db
+      .select()
+      .from(parsedDocument)
+      .where(eq(parsedDocument.driveFileId, driveFiles[0].id))
+      .limit(1);
+
+    return parsedDocs[0] || null;
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get parsed document"
+    );
+  }
+}
+
+export async function getParsedDocumentsByUserId({
+  userId,
+}: {
+  userId: string;
+}) {
+  try {
+    return await db
+      .select()
+      .from(parsedDocument)
+      .where(eq(parsedDocument.userId, userId))
+      .orderBy(desc(parsedDocument.createdAt));
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get parsed documents"
     );
   }
 }

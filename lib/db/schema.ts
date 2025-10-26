@@ -218,3 +218,44 @@ export const driveFile = pgTable("DriveFile", {
   lastSyncedAt: timestamp("lastSyncedAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
+
+export const inngestStatus = pgTable("InngestStatus", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  jobId: text("jobId").notNull().unique(),
+  jobType: varchar("jobType", { length: 50 }).notNull(),
+  status: varchar("status", {
+    enum: ["pending", "running", "completed", "failed"],
+  })
+    .notNull()
+    .default("pending"),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  metadata: jsonb("metadata"),
+  error: text("error"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type InngestStatus = InferSelectModel<typeof inngestStatus>;
+
+export const parsedDocument = pgTable("ParsedDocument", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  driveFileId: uuid("driveFileId")
+    .notNull()
+    .references(() => driveFile.id),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  documentType: varchar("documentType", {
+    enum: ["housing", "transportation"],
+  }).notNull(),
+  parsedData: jsonb("parsedData").notNull(),
+  confidence: varchar("confidence", { length: 10 }),
+  rawText: text("rawText"),
+  inngestJobId: text("inngestJobId"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type ParsedDocument = InferSelectModel<typeof parsedDocument>;
