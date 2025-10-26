@@ -8,6 +8,7 @@ import {
   getDriveFiles,
   getGoogleAccount,
   getParsedDocumentByDriveFileId,
+  updateGoogleAccount,
 } from "@/lib/db/queries";
 import { document, driveFile, parsedDocument } from "@/lib/db/schema";
 import { initializeDriveClient } from "@/lib/google/drive-service";
@@ -79,8 +80,57 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const decryptedAccessToken = decryptToken(account.accessToken);
-    const driveClient = initializeDriveClient(decryptedAccessToken);
+    // Check if access token is expired and refresh if needed
+    let decryptedAccessToken = decryptToken(account.accessToken);
+    let driveClient = initializeDriveClient(decryptedAccessToken);
+
+    // Try to verify the token is valid by making a test request
+    try {
+      await driveClient.about.get({ fields: "user" });
+    } catch {
+      // Token is likely expired, refresh it
+      console.log("Access token expired, attempting to refresh...");
+
+      if (account.refreshToken) {
+        const { refreshAccessToken } = await import(
+          "@/lib/google/drive-service"
+        );
+        const { encryptToken } = await import("@/lib/google/token-manager");
+        const decryptedRefreshToken = decryptToken(account.refreshToken);
+
+        try {
+          const { accessToken: newAccessToken } = await refreshAccessToken(
+            decryptedRefreshToken
+          );
+
+          // Update the account with the new access token
+          await updateGoogleAccount({
+            userId: session.user.id,
+            accessToken: encryptToken(newAccessToken),
+          });
+
+          decryptedAccessToken = newAccessToken;
+          driveClient = initializeDriveClient(decryptedAccessToken);
+        } catch (refreshError) {
+          console.error("Failed to refresh access token:", refreshError);
+          return NextResponse.json(
+            {
+              error:
+                "Authentication expired. Please reconnect your Google account.",
+            },
+            { status: 401 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          {
+            error:
+              "Authentication expired. Please reconnect your Google account.",
+          },
+          { status: 401 }
+        );
+      }
+    }
 
     // Get the file record from database to find its id
     const fileRecords = await db
