@@ -7,8 +7,9 @@ import {
   getActiveTravel,
   getDriveFiles,
   getGoogleAccount,
+  getParsedDocumentByDriveFileId,
 } from "@/lib/db/queries";
-import { driveFile } from "@/lib/db/schema";
+import { document, driveFile, parsedDocument } from "@/lib/db/schema";
 import { initializeDriveClient } from "@/lib/google/drive-service";
 import { decryptToken } from "@/lib/google/token-manager";
 
@@ -28,7 +29,20 @@ export async function GET() {
 
     const files = await getDriveFiles({ travelId: travel.id });
 
-    return NextResponse.json({ files });
+    // Add parsed status for each file
+    const filesWithParsedStatus = await Promise.all(
+      files.map(async (file) => {
+        const parsedDoc = await getParsedDocumentByDriveFileId({
+          driveFileId: file.driveFileId,
+        });
+        return {
+          ...file,
+          hasParsedDocument: !!parsedDoc,
+        };
+      })
+    );
+
+    return NextResponse.json({ files: filesWithParsedStatus });
   } catch (error) {
     console.error("Error fetching files:", error);
     return NextResponse.json(
@@ -82,6 +96,19 @@ export async function DELETE(request: Request) {
     }
 
     const fileRecord = fileRecords[0];
+
+    // Delete parsed document if it exists
+    const parsedDoc = await getParsedDocumentByDriveFileId({ driveFileId });
+    if (parsedDoc) {
+      await db
+        .delete(parsedDocument)
+        .where(eq(parsedDocument.driveFileId, fileRecord.id));
+    }
+
+    // Delete linked document (artifact) if it exists
+    if (fileRecord.documentId) {
+      await db.delete(document).where(eq(document.id, fileRecord.documentId));
+    }
 
     // Delete from Google Drive
     await driveClient.files.delete({ fileId: driveFileId });
