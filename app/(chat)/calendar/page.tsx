@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TravelCalendar } from "@/components/travel-calendar";
+import { TravelCalendar } from "@/components/travel/travel-calendar";
 
 type TravelNode = {
   id: string;

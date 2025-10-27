@@ -19,15 +19,18 @@ import {
 } from "react";
 import { useOnClickOutside } from "usehooks-ts";
 import {
+  type ArtifactKind,
+  artifactDefinitions,
+} from "@/components/artifact/artifact";
+import type { ArtifactToolbarItem } from "@/components/artifact/create-artifact";
+import { ArrowUpIcon, StopIcon, SummarizeIcon } from "@/components/icons";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { ChatMessage } from "@/lib/types";
-import { type ArtifactKind, artifactDefinitions } from "./artifact";
-import type { ArtifactToolbarItem } from "./create-artifact";
-import { ArrowUpIcon, StopIcon, SummarizeIcon } from "./icons";
 
 type ToolProps = {
   description: string;

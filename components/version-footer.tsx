@@ -5,11 +5,11 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { useSWRConfig } from "swr";
 import { useWindowSize } from "usehooks-ts";
+import { LoaderIcon } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 import { useArtifact } from "@/hooks/use-artifact";
 import type { Document } from "@/lib/db/schema";
 import { getDocumentTimestampByIndex } from "@/lib/utils";
-import { LoaderIcon } from "./icons";
-import { Button } from "./ui/button";
 
 type VersionFooterProps = {
   handleVersionChange: (type: "next" | "prev" | "toggle" | "latest") => void;

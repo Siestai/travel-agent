@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TravelMap } from "@/components/travel-map";
+import { TravelMap } from "@/components/travel/travel-map";
 import type { TravelConnection } from "@/lib/types/travel";
 
 type TravelNode = {

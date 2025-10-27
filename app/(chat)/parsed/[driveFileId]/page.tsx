@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/app/(auth)/auth";
-import { ParsedDocumentView } from "@/components/parsed-document-view";
+import { ParsedDocumentView } from "@/components/document/parsed-document-view";
 import { getParsedDocumentByDriveFileId } from "@/lib/db/queries";
 import type { ParsedDocument } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";

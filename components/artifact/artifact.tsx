@@ -16,6 +16,11 @@ import { codeArtifact } from "@/artifacts/code/client";
 import { imageArtifact } from "@/artifacts/image/client";
 import { sheetArtifact } from "@/artifacts/sheet/client";
 import { textArtifact } from "@/artifacts/text/client";
+import { MultimodalInput } from "@/components/chat/multimodal-input";
+import { Toolbar } from "@/components/toolbar";
+import { useSidebar } from "@/components/ui/sidebar";
+import { VersionFooter } from "@/components/version-footer";
+import type { VisibilityType } from "@/components/visibility-selector";
 import { useArtifact } from "@/hooks/use-artifact";
 import type { Document, Vote } from "@/lib/db/schema";
 import type { Attachment, ChatMessage } from "@/lib/types";
@@ -23,11 +28,6 @@ import { fetcher } from "@/lib/utils";
 import { ArtifactActions } from "./artifact-actions";
 import { ArtifactCloseButton } from "./artifact-close-button";
 import { ArtifactMessages } from "./artifact-messages";
-import { MultimodalInput } from "./multimodal-input";
-import { Toolbar } from "./toolbar";
-import { useSidebar } from "./ui/sidebar";
-import { VersionFooter } from "./version-footer";
-import type { VisibilityType } from "./visibility-selector";
 
 export const artifactDefinitions = [
   textArtifact,

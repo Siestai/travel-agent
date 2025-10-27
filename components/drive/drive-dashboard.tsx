@@ -4,10 +4,10 @@ import { Link2, Plus, RefreshCw } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { CreateTravelModal } from "@/components/create-travel-modal";
-import { DriveConnectionStatus } from "@/components/drive-connection-status";
-import { DriveFileList } from "@/components/drive-file-list";
-import { DriveFileUpload } from "@/components/drive-file-upload";
-import { TravelSelector } from "@/components/travel-selector";
+import { DriveConnectionStatus } from "@/components/drive/drive-connection-status";
+import { DriveFileList } from "@/components/drive/drive-file-list";
+import { DriveFileUpload } from "@/components/drive/drive-file-upload";
+import { TravelSelector } from "@/components/travel/travel-selector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 

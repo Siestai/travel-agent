@@ -4,7 +4,7 @@ import { ExternalLink, Eye, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
-import { ParseDocumentButton } from "@/components/parse-document-button";
+import { ParseDocumentButton } from "@/components/document/parse-document-button";
 import { Button } from "@/components/ui/button";
 import {
   Card,

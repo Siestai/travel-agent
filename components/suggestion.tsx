@@ -3,12 +3,11 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { useWindowSize } from "usehooks-ts";
-
+import type { ArtifactKind } from "@/components/artifact/artifact";
+import { CrossIcon, MessageIcon } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 import type { UISuggestion } from "@/lib/editor/suggestions";
 import { cn } from "@/lib/utils";
-import type { ArtifactKind } from "./artifact";
-import { CrossIcon, MessageIcon } from "./icons";
-import { Button } from "./ui/button";
 
 export const Suggestion = ({
   suggestion,
