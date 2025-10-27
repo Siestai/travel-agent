@@ -3,8 +3,8 @@
 import { LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import type { User } from "next-auth";
-import { SidebarUserNav } from "@/components/sidebar-user-nav";
-import { TravelNavItems } from "@/components/travel-nav-items";
+import { SidebarUserNav } from "@/components/sidebar/sidebar-user-nav";
+import { TravelNavItems } from "@/components/travel/travel-nav-items";
 import {
   Sidebar,
   SidebarContent,

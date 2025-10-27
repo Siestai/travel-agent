@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { DriveDashboard } from "@/components/drive-dashboard";
+import { DriveDashboard } from "@/components/drive/drive-dashboard";
 
 export const metadata: Metadata = {
   title: "Google Drive",

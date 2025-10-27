@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/app/(auth)/auth";
-import { ParsedDocumentView } from "@/components/parsed-document-view";
+import { ParsedDocumentView } from "@/components/document/parsed-document-view";
 import { getParsedDocumentByDriveFileId } from "@/lib/db/queries";
 import type { ParsedDocument } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
@@ -11,6 +11,7 @@ type SerializedParsedDocument = Omit<
 > & {
   createdAt: string;
   updatedAt: string;
+  parsedData: Record<string, unknown>;
 };
 
 export default async function ParsedFilePage({
@@ -36,17 +37,29 @@ export default async function ParsedFilePage({
       throw new ChatSDKError("forbidden:document", "Access denied");
     }
 
-    // Serialize Date fields to strings for client component
+    // Ensure parsedData is properly serialized to a plain object
+    const serializedParsedData = JSON.parse(
+      JSON.stringify(parsedDoc.parsedData)
+    ) as Record<string, unknown>;
+
+    // Manually construct plain object to avoid prototype chains
     const serializedDoc: SerializedParsedDocument = {
-      ...parsedDoc,
+      id: parsedDoc.id,
+      driveFileId: parsedDoc.driveFileId,
+      userId: parsedDoc.userId,
+      documentType: parsedDoc.documentType,
+      parsedData: serializedParsedData,
+      confidence: parsedDoc.confidence,
+      rawText: parsedDoc.rawText,
+      inngestJobId: parsedDoc.inngestJobId,
       createdAt:
         parsedDoc.createdAt instanceof Date
           ? parsedDoc.createdAt.toISOString()
-          : parsedDoc.createdAt,
+          : String(parsedDoc.createdAt),
       updatedAt:
         parsedDoc.updatedAt instanceof Date
           ? parsedDoc.updatedAt.toISOString()
-          : parsedDoc.updatedAt,
+          : String(parsedDoc.updatedAt),
     };
 
     return (

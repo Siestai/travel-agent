@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TravelTimeline } from "@/components/travel-timeline";
+import { TravelTimeline } from "@/components/travel/travel-timeline";
 import type { TravelConnection } from "@/lib/types/travel";
 
 type TravelNode = {
@@ -14,6 +14,7 @@ type TravelNode = {
   checkOut?: string;
   documentId: string;
   documentTitle: string;
+  driveFileId: string;
   departureTime?: string;
   arrivalTime?: string;
 };
