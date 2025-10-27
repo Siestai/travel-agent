@@ -7,7 +7,7 @@ import {
   Marker,
   Polyline,
 } from "@react-google-maps/api";
-import { ExternalLink } from "lucide-react";
+import { Building2, Calendar, Clock, ExternalLink, MapPin } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { TravelConnection } from "@/lib/types/travel";
@@ -26,6 +26,161 @@ type TravelNode = {
   documentTitle: string;
   departureTime?: string;
   arrivalTime?: string;
+  price?: number;
+  currency?: string;
+  documentType?: "housing" | "transportation";
+  nodeRole?: "departure" | "arrival";
+};
+
+// Extract city from address
+const extractCity = (address?: string): string => {
+  if (!address) {
+    return "Unknown";
+  }
+
+  // Try to extract city from common address formats
+  const parts = address.split(",").map((p) => p.trim());
+
+  // Common patterns: "Address, City, Country" or "Address, City, State, Country"
+  // Usually city is the second-to-last or third-to-last part
+  if (parts.length >= 2) {
+    // Try the second-to-last part first (most common)
+    const cityCandidate = parts.at(-2);
+    // If it looks like a country code or state, try next one
+    if (cityCandidate && cityCandidate.length <= 3 && parts.length >= 3) {
+      return parts.at(-3) || address;
+    }
+    return cityCandidate || address;
+  }
+
+  // If we can't parse it well, return the whole address
+  return address;
+};
+
+// Format date for display
+const formatDate = (dateString?: string): string => {
+  if (!dateString) {
+    return "";
+  }
+  const date = new Date(dateString);
+  return Number.isNaN(date.getTime())
+    ? dateString
+    : date.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+};
+
+// Format time for display
+const formatTime = (dateString?: string): string => {
+  if (!dateString) {
+    return "";
+  }
+  const date = new Date(dateString);
+  return Number.isNaN(date.getTime())
+    ? dateString
+    : date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+};
+
+// Format price with currency
+const formatPrice = (price?: number, currency?: string): string => {
+  if (!price || price === 0) {
+    return "";
+  }
+
+  const symbolMap: Record<string, string> = {
+    USD: "$",
+    EUR: "€",
+    GBP: "£",
+    JPY: "¥",
+    CAD: "C$",
+    AUD: "A$",
+    CHF: "CHF",
+    CNY: "¥",
+    INR: "₹",
+    MXN: "MX$",
+    BRL: "R$",
+    RUB: "₽",
+  };
+
+  const symbol = currency ? symbolMap[currency.toUpperCase()] || currency : "$";
+  return `${symbol}${price.toFixed(2)}`;
+};
+
+// Calculate hours between two dates
+const calculateHours = (startTime?: string, endTime?: string): number => {
+  if (!startTime || !endTime) {
+    return 0;
+  }
+
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return 0;
+  }
+
+  const diffMs = end.getTime() - start.getTime();
+  return diffMs / (1000 * 60 * 60);
+};
+
+// Get document type label
+const getDocumentTypeLabel = (
+  documentType?: string,
+  nodeRole?: string
+): string => {
+  if (!documentType) {
+    return "Unknown";
+  }
+
+  if (documentType === "housing") {
+    return "Housing";
+  }
+
+  if (documentType === "transportation") {
+    if (nodeRole === "departure") {
+      return "Transportation - Departure";
+    }
+    if (nodeRole === "arrival") {
+      return "Transportation - Arrival";
+    }
+    return "Transportation";
+  }
+
+  return documentType.charAt(0).toUpperCase() + documentType.slice(1);
+};
+
+// Generate Google Maps URL for a location
+const getGoogleMapsUrl = (
+  address?: string,
+  coordinates?: { lat: number; lng: number },
+  nodeName?: string,
+  documentType?: string
+): string => {
+  // For transportation nodes, prefer place names for better results
+  if (documentType === "transportation" && nodeName) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      nodeName
+    )}`;
+  }
+
+  // For housing nodes or when coordinates are available, use precise location
+  if (coordinates) {
+    return `https://www.google.com/maps?q=${coordinates.lat},${coordinates.lng}`;
+  }
+
+  // Fallback to address search
+  if (address) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      address
+    )}`;
+  }
+
+  return "";
 };
 
 type TravelMapProps = {
@@ -433,46 +588,100 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
                   (selectedConnection.from.lng + selectedConnection.to.lng) / 2,
               }}
             >
-              <div className="p-2">
-                <h3 className="font-semibold text-gray-900">
-                  {selectedConnection.connection.type.toUpperCase()} Connection
-                </h3>
-                {selectedConnection.connection.departureTime && (
-                  <p className="text-gray-700 text-xs">
-                    <span className="font-semibold">Departure:</span> {(() => {
-                      const date = new Date(
-                        selectedConnection.connection.departureTime
-                      );
-                      return Number.isNaN(date.getTime())
-                        ? selectedConnection.connection.departureTime
-                        : date.toLocaleString();
-                    })()}
-                  </p>
-                )}
-                {selectedConnection.connection.arrivalTime && (
-                  <p className="text-gray-700 text-xs">
-                    <span className="font-semibold">Arrival:</span> {(() => {
-                      const date = new Date(
-                        selectedConnection.connection.arrivalTime
-                      );
-                      return Number.isNaN(date.getTime())
-                        ? selectedConnection.connection.arrivalTime
-                        : date.toLocaleString();
-                    })()}
-                  </p>
-                )}
-                {selectedConnection.connection.carrier && (
-                  <p className="text-gray-700 text-xs">
-                    <span className="font-semibold">Carrier:</span>{" "}
-                    {selectedConnection.connection.carrier}
-                  </p>
-                )}
-                {selectedConnection.connection.bookingReference && (
-                  <p className="text-gray-700 text-xs">
-                    <span className="font-semibold">Booking:</span>{" "}
-                    {selectedConnection.connection.bookingReference}
-                  </p>
-                )}
+              <div className="min-w-[280px] p-0">
+                {/* Header */}
+                <div className="border-gray-100 border-b bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 font-bold text-emerald-600 text-sm">
+                        {selectedConnection.connection.type === "flight"
+                          ? "✈"
+                          : selectedConnection.connection.type === "train"
+                            ? "🚂"
+                            : selectedConnection.connection.type === "bus"
+                              ? "🚌"
+                              : selectedConnection.connection.type === "car"
+                                ? "🚗"
+                                : "🚢"}
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-base text-gray-900">
+                        {selectedConnection.connection.type
+                          .charAt(0)
+                          .toUpperCase() +
+                          selectedConnection.connection.type.slice(1)}{" "}
+                        Connection
+                      </h3>
+                      <p className="mt-0.5 font-medium text-emerald-600 text-sm">
+                        Travel Route
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="space-y-2.5 px-4 py-3">
+                  {/* Times */}
+                  {(selectedConnection.connection.departureTime ||
+                    selectedConnection.connection.arrivalTime) && (
+                    <div className="flex items-start gap-2.5">
+                      <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <div className="min-w-0 flex-1 space-y-1">
+                        {selectedConnection.connection.departureTime && (
+                          <p className="text-gray-600 text-xs">
+                            <span className="font-medium text-gray-700">
+                              Departure:
+                            </span>{" "}
+                            {formatTime(
+                              selectedConnection.connection.departureTime
+                            )}
+                          </p>
+                        )}
+                        {selectedConnection.connection.arrivalTime && (
+                          <p className="text-gray-600 text-xs">
+                            <span className="font-medium text-gray-700">
+                              Arrival:
+                            </span>{" "}
+                            {formatTime(
+                              selectedConnection.connection.arrivalTime
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Carrier */}
+                  {selectedConnection.connection.carrier && (
+                    <div className="flex items-start gap-2.5">
+                      <Building2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-gray-600 text-xs">
+                          <span className="font-medium text-gray-700">
+                            Carrier:
+                          </span>{" "}
+                          {selectedConnection.connection.carrier}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Booking Reference */}
+                  {selectedConnection.connection.bookingReference && (
+                    <div className="flex items-start gap-2.5">
+                      <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words text-gray-600 text-xs">
+                          <span className="font-medium text-gray-700">
+                            Booking:
+                          </span>{" "}
+                          {selectedConnection.connection.bookingReference}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </InfoWindow>
           )}
@@ -483,42 +692,91 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
               onCloseClick={() => setSelectedMarker(null)}
               position={selectedMarker.coordinates}
             >
-              <div className="p-2">
-                <h3 className="font-semibold text-gray-900">
-                  {selectedMarker.name}
-                </h3>
-                <p className="text-gray-700 text-sm">
-                  {selectedMarker.documentTitle}
-                </p>
-                <div className="mt-2 space-y-1">
+              <div className="min-w-[300px] max-w-[350px] p-0">
+                {/* Header */}
+                <div className="border-gray-100 border-b bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                        {getMarkerIcon(selectedMarker.type)}
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      {/* Type Label */}
+                      <p className="mb-1 font-medium text-blue-700 text-xs uppercase tracking-wide">
+                        {getDocumentTypeLabel(
+                          selectedMarker.documentType,
+                          selectedMarker.nodeRole
+                        )}
+                      </p>
+                      {/* Name with Price */}
+                      <h3 className="truncate font-semibold text-base text-gray-900">
+                        {selectedMarker.name}
+                        {selectedMarker.price && (
+                          <span className="ml-2 font-normal text-blue-600">
+                            {formatPrice(
+                              selectedMarker.price,
+                              selectedMarker.currency
+                            )}
+                          </span>
+                        )}
+                      </h3>
+                      {/* City */}
+                      <p className="mt-0.5 font-medium text-blue-600 text-sm">
+                        {extractCity(selectedMarker.address)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="space-y-2.5 px-4 py-3">
+                  {/* Address */}
                   {selectedMarker.address && (
-                    <p className="text-gray-700 text-xs">
-                      <span className="font-semibold">Address:</span>{" "}
-                      {selectedMarker.address}
-                    </p>
+                    <div className="flex items-start gap-2.5">
+                      <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <div className="min-w-0 flex-1">
+                        <button
+                          className="group w-full text-left"
+                          onClick={() => {
+                            const url = getGoogleMapsUrl(
+                              selectedMarker.address,
+                              selectedMarker.coordinates,
+                              selectedMarker.name,
+                              selectedMarker.documentType
+                            );
+                            if (url) {
+                              window.open(url, "_blank", "noopener,noreferrer");
+                            }
+                          }}
+                          type="button"
+                        >
+                          <p className="break-words text-gray-600 text-xs leading-relaxed transition-colors hover:cursor-pointer group-hover:text-blue-600 group-hover:underline">
+                            {selectedMarker.address}
+                          </p>
+                        </button>
+                      </div>
+                    </div>
                   )}
+
+                  {/* Housing Dates: Check-in, Check-out, Nights */}
                   {selectedMarker.checkIn && selectedMarker.checkOut && (
-                    <>
-                      <p className="text-gray-700 text-xs">
-                        <span className="font-semibold">Check-in:</span>{" "}
+                    <div className="flex items-start gap-2.5">
+                      <Calendar className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-gray-600 text-xs">
+                          <span className="font-medium text-gray-700">
+                            Check-in:
+                          </span>{" "}
+                          {formatDate(selectedMarker.checkIn)}
+                        </p>
+                        <p className="text-gray-600 text-xs">
+                          <span className="font-medium text-gray-700">
+                            Check-out:
+                          </span>{" "}
+                          {formatDate(selectedMarker.checkOut)}
+                        </p>
                         {(() => {
-                          const date = new Date(selectedMarker.checkIn);
-                          return Number.isNaN(date.getTime())
-                            ? selectedMarker.checkIn
-                            : date.toLocaleString();
-                        })()}
-                      </p>
-                      <p className="text-gray-700 text-xs">
-                        <span className="font-semibold">Check-out:</span>{" "}
-                        {(() => {
-                          const date = new Date(selectedMarker.checkOut);
-                          return Number.isNaN(date.getTime())
-                            ? selectedMarker.checkOut
-                            : date.toLocaleString();
-                        })()}
-                      </p>
-                      <p className="text-gray-600 text-xs">
-                        Duration: {(() => {
                           const checkInDate = new Date(selectedMarker.checkIn);
                           const checkOutDate = new Date(
                             selectedMarker.checkOut
@@ -526,38 +784,68 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
                           const isValid =
                             !Number.isNaN(checkInDate.getTime()) &&
                             !Number.isNaN(checkOutDate.getTime());
-                          return isValid
+                          const nights = isValid
                             ? Math.ceil(
                                 (checkOutDate.getTime() -
                                   checkInDate.getTime()) /
                                   (1000 * 60 * 60 * 24)
                               )
-                            : "N/A";
-                        })()} nights
-                      </p>
-                    </>
+                            : 0;
+                          return nights > 0 ? (
+                            <p className="pt-0.5 font-medium text-blue-600 text-xs">
+                              {nights} night{nights !== 1 ? "s" : ""} stay
+                            </p>
+                          ) : null;
+                        })()}
+                      </div>
+                    </div>
                   )}
-                  {selectedMarker.departureTime && (
-                    <p className="text-gray-700 text-xs">
-                      <span className="font-semibold">Departure:</span>{" "}
-                      {(() => {
-                        const date = new Date(selectedMarker.departureTime);
-                        return Number.isNaN(date.getTime())
-                          ? selectedMarker.departureTime
-                          : date.toLocaleString();
-                      })()}
+
+                  {/* Transportation Times: Departure, Arrival, Total Hours */}
+                  {(selectedMarker.departureTime ||
+                    selectedMarker.arrivalTime) && (
+                    <div className="flex items-start gap-2.5">
+                      <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <div className="min-w-0 flex-1 space-y-1">
+                        {selectedMarker.departureTime && (
+                          <p className="text-gray-600 text-xs">
+                            <span className="font-medium text-gray-700">
+                              Departure:
+                            </span>{" "}
+                            {formatTime(selectedMarker.departureTime)}
+                          </p>
+                        )}
+                        {selectedMarker.arrivalTime && (
+                          <p className="text-gray-600 text-xs">
+                            <span className="font-medium text-gray-700">
+                              Arrival:
+                            </span>{" "}
+                            {formatTime(selectedMarker.arrivalTime)}
+                          </p>
+                        )}
+                        {(() => {
+                          const hours = calculateHours(
+                            selectedMarker.departureTime,
+                            selectedMarker.arrivalTime
+                          );
+                          return hours > 0 ? (
+                            <p className="pt-0.5 font-medium text-blue-600 text-xs">
+                              {hours.toFixed(1)} hour{hours !== 1 ? "s" : ""}{" "}
+                              duration
+                            </p>
+                          ) : null;
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Document Source */}
+                  <div className="flex items-start gap-2.5 border-gray-100 border-t pt-2.5">
+                    <Building2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                    <p className="truncate text-gray-500 text-xs">
+                      {selectedMarker.documentTitle}
                     </p>
-                  )}
-                  {selectedMarker.arrivalTime && (
-                    <p className="text-gray-700 text-xs">
-                      <span className="font-semibold">Arrival:</span> {(() => {
-                        const date = new Date(selectedMarker.arrivalTime);
-                        return Number.isNaN(date.getTime())
-                          ? selectedMarker.arrivalTime
-                          : date.toLocaleString();
-                      })()}
-                    </p>
-                  )}
+                  </div>
                 </div>
               </div>
             </InfoWindow>

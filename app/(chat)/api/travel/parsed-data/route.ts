@@ -19,6 +19,10 @@ type EnrichedLocation = {
   driveFileId: string;
   departureTime?: string;
   arrivalTime?: string;
+  price?: number;
+  currency?: string;
+  documentType: "housing" | "transportation";
+  nodeRole?: "departure" | "arrival"; // For transportation nodes
 };
 
 /**
@@ -42,6 +46,8 @@ function enrichParsedData(
     const propertyAddress = parsedData.propertyAddress as string | undefined;
     const checkInDate = parsedData.checkInDate as string | undefined;
     const checkOutDate = parsedData.checkOutDate as string | undefined;
+    const totalAmount = parsedData.totalAmount as number | undefined;
+    const currency = parsedData.currency as string | undefined;
 
     if (propertyAddress) {
       nodes.push({
@@ -54,6 +60,9 @@ function enrichParsedData(
         documentId: parsedDoc.id,
         documentTitle: fileName,
         driveFileId: googleDriveFileId || "",
+        price: totalAmount,
+        currency,
+        documentType: "housing",
       });
     }
   } else if (parsedDoc.documentType === "transportation") {
@@ -81,6 +90,8 @@ function enrichParsedData(
           : transportationType === "train" || transportationType === "bus"
             ? "station"
             : "destination";
+      const totalAmount = parsedData.totalAmount as number | undefined;
+      const currency = parsedData.currency as string | undefined;
 
       nodes.push({
         id: `node_${parsedDoc.id}_departure`,
@@ -91,6 +102,10 @@ function enrichParsedData(
         documentId: parsedDoc.id,
         documentTitle: fileName,
         driveFileId: googleDriveFileId || "",
+        price: totalAmount,
+        currency,
+        documentType: "transportation",
+        nodeRole: "departure",
       });
       fromNodeId = `node_${parsedDoc.id}_departure`;
     }
@@ -103,6 +118,8 @@ function enrichParsedData(
           : transportationType === "train" || transportationType === "bus"
             ? "station"
             : "destination";
+      const totalAmount = parsedData.totalAmount as number | undefined;
+      const currency = parsedData.currency as string | undefined;
 
       nodes.push({
         id: `node_${parsedDoc.id}_arrival`,
@@ -113,6 +130,10 @@ function enrichParsedData(
         documentId: parsedDoc.id,
         documentTitle: fileName,
         driveFileId: googleDriveFileId || "",
+        price: totalAmount,
+        currency,
+        documentType: "transportation",
+        nodeRole: "arrival",
       });
       toNodeId = `node_${parsedDoc.id}_arrival`;
     }
