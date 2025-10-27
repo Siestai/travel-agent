@@ -16,10 +16,11 @@ import { TransportationDataView } from "./transportation-data-view";
 
 type SerializedParsedDocument = Omit<
   ParsedDocument,
-  "createdAt" | "updatedAt"
+  "createdAt" | "updatedAt" | "parsedData"
 > & {
   createdAt: string;
   updatedAt: string;
+  parsedData: Record<string, unknown>;
 };
 
 export function ParsedDocumentView({

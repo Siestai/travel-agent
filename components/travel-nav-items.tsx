@@ -2,6 +2,7 @@
 
 import {
   Calendar,
+  CalendarDays,
   FolderOpen,
   Map as MapIcon,
   MessageSquare,
@@ -21,6 +22,7 @@ const navItems = [
   { title: "Chat", href: "/chat", icon: MessageSquare },
   { title: "Maps", href: "/maps", icon: MapIcon },
   { title: "Timeline", href: "/timeline", icon: Calendar },
+  { title: "Calendar", href: "/calendar", icon: CalendarDays },
   { title: "Settings", href: "/settings", icon: Settings },
 ];
 

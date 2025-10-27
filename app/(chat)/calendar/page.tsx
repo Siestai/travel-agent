@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TravelTimeline } from "@/components/travel-timeline";
-import type { TravelConnection } from "@/lib/types/travel";
+import { TravelCalendar } from "@/components/travel-calendar";
 
 type TravelNode = {
   id: string;
@@ -19,9 +18,8 @@ type TravelNode = {
   arrivalTime?: string;
 };
 
-export default function TimelinePage() {
+export default function CalendarPage() {
   const [nodes, setNodes] = useState<TravelNode[]>([]);
-  const [connections, setConnections] = useState<TravelConnection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +35,6 @@ export default function TimelinePage() {
 
         const data = await response.json();
         setNodes(data.nodes || []);
-        setConnections(data.connections || []);
       } catch (err) {
         console.error("Error fetching travel data:", err);
         setError(
@@ -58,7 +55,7 @@ export default function TimelinePage() {
           <div className="mb-4 flex items-center justify-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-border border-t-primary" />
           </div>
-          <p className="text-muted-foreground">Loading your timeline...</p>
+          <p className="text-muted-foreground">Loading calendar...</p>
         </div>
       </div>
     );
@@ -78,9 +75,9 @@ export default function TimelinePage() {
   return (
     <div className="flex h-full flex-col">
       <div className="border-b px-6 py-4">
-        <h1 className="font-semibold text-2xl">Travel Timeline</h1>
+        <h1 className="font-semibold text-2xl">Travel Calendar</h1>
         <p className="text-muted-foreground text-sm">
-          Explore your journey through time
+          View your travel events in calendar format
         </p>
       </div>
 
@@ -88,15 +85,17 @@ export default function TimelinePage() {
         {nodes.length === 0 ? (
           <div className="flex h-full items-center justify-center bg-muted">
             <div className="text-center">
-              <p className="mb-2 text-5xl">🗺️</p>
-              <p className="font-medium text-lg">No timeline to display</p>
+              <p className="mb-2 text-5xl">📅</p>
+              <p className="font-medium text-lg">
+                No calendar events to display
+              </p>
               <p className="text-muted-foreground text-sm">
-                Parse travel documents to see them on the timeline
+                Parse travel documents to see them on the calendar
               </p>
             </div>
           </div>
         ) : (
-          <TravelTimeline connections={connections} nodes={nodes} />
+          <TravelCalendar nodes={nodes} />
         )}
       </div>
     </div>

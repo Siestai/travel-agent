@@ -16,6 +16,7 @@ type EnrichedLocation = {
   checkOut?: string;
   documentId: string;
   documentTitle: string;
+  driveFileId: string;
   departureTime?: string;
   arrivalTime?: string;
 };
@@ -25,7 +26,8 @@ type EnrichedLocation = {
  */
 function enrichParsedData(
   parsedDoc: ParsedDocument,
-  fileName: string
+  fileName: string,
+  googleDriveFileId?: string
 ): {
   nodes: EnrichedLocation[];
   connections: TravelConnection[];
@@ -51,6 +53,7 @@ function enrichParsedData(
         checkOut: checkOutDate,
         documentId: parsedDoc.id,
         documentTitle: fileName,
+        driveFileId: googleDriveFileId || "",
       });
     }
   } else if (parsedDoc.documentType === "transportation") {
@@ -87,6 +90,7 @@ function enrichParsedData(
         departureTime: departureDateTime,
         documentId: parsedDoc.id,
         documentTitle: fileName,
+        driveFileId: googleDriveFileId || "",
       });
       fromNodeId = `node_${parsedDoc.id}_departure`;
     }
@@ -108,6 +112,7 @@ function enrichParsedData(
         arrivalTime: arrivalDateTime,
         documentId: parsedDoc.id,
         documentTitle: fileName,
+        driveFileId: googleDriveFileId || "",
       });
       toNodeId = `node_${parsedDoc.id}_arrival`;
     }
@@ -165,10 +170,18 @@ export async function GET() {
 
     // Process each parsed document
     for (const parsedDoc of parsedDocs) {
+      // parsedDoc.driveFileId is the DB UUID, need to find the actual Drive file
       const file = driveFiles.find((f) => f.id === parsedDoc.driveFileId);
       const fileName = file?.name || "Unknown";
 
-      const { nodes, connections } = enrichParsedData(parsedDoc, fileName);
+      // Use the Google Drive file ID (driveFileId field) instead of DB UUID
+      const googleDriveFileId = file?.driveFileId;
+
+      const { nodes, connections } = enrichParsedData(
+        parsedDoc,
+        fileName,
+        googleDriveFileId
+      );
       allNodes.push(...nodes);
       allConnections.push(...connections);
     }
