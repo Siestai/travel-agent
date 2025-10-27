@@ -1,11 +1,11 @@
 import { toast } from "sonner";
-import { CodeEditor } from "@/components/code-editor";
+import { Artifact } from "@/components/artifact/create-artifact";
+import { CodeEditor } from "@/components/editor/code-editor";
 import {
   Console,
   type ConsoleOutput,
   type ConsoleOutputContent,
-} from "@/components/console";
-import { Artifact } from "@/components/create-artifact";
+} from "@/components/editor/console";
 import {
   CopyIcon,
   LogsIcon,

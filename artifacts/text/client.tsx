@@ -1,7 +1,8 @@
 import { toast } from "sonner";
-import { Artifact } from "@/components/create-artifact";
+import { Artifact } from "@/components/artifact/create-artifact";
 import { DiffView } from "@/components/diffview";
-import { DocumentSkeleton } from "@/components/document-skeleton";
+import { DocumentSkeleton } from "@/components/document/document-skeleton";
+import { Editor } from "@/components/editor/text-editor";
 import {
   ClockRewind,
   CopyIcon,
@@ -10,7 +11,6 @@ import {
   RedoIcon,
   UndoIcon,
 } from "@/components/icons";
-import { Editor } from "@/components/text-editor";
 import type { Suggestion } from "@/lib/db/schema";
 import { getSuggestions } from "../actions";
 

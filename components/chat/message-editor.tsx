@@ -10,10 +10,10 @@ import {
   useState,
 } from "react";
 import { deleteTrailingMessages } from "@/app/(chat)/actions";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import type { ChatMessage } from "@/lib/types";
 import { getTextFromMessage } from "@/lib/utils";
-import { Button } from "./ui/button";
-import { Textarea } from "./ui/textarea";
 
 export type MessageEditorProps = {
   message: ChatMessage;

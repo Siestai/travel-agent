@@ -2,7 +2,7 @@
 
 import { MessageCircle, Minimize2, X } from "lucide-react";
 import { useState } from "react";
-import { Chat } from "@/components/chat";
+import { Chat } from "@/components/chat/chat";
 import { DataStreamHandler } from "@/components/data-stream-handler";
 import {
   Sheet,

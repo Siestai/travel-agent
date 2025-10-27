@@ -7,6 +7,7 @@ import type { User } from "next-auth";
 import { useState } from "react";
 import { toast } from "sonner";
 import useSWRInfinite from "swr/infinite";
+import { LoaderIcon } from "@/components/icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +26,6 @@ import {
 } from "@/components/ui/sidebar";
 import type { Chat } from "@/lib/db/schema";
 import { fetcher } from "@/lib/utils";
-import { LoaderIcon } from "./icons";
 import { ChatItem } from "./sidebar-history-item";
 
 type GroupedChats = {

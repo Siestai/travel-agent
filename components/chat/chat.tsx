@@ -6,7 +6,13 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
-import { ChatHeader } from "@/components/chat-header";
+import { Artifact } from "@/components/artifact/artifact";
+import { ChatHeader } from "@/components/chat/chat-header";
+import { Messages } from "@/components/chat/messages";
+import { MultimodalInput } from "@/components/chat/multimodal-input";
+import { useDataStream } from "@/components/data-stream-provider";
+import { getChatHistoryPaginationKey } from "@/components/sidebar/sidebar-history";
+import { toast } from "@/components/toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import type { VisibilityType } from "@/components/visibility-selector";
 import { useArtifactSelector } from "@/hooks/use-artifact";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
@@ -25,13 +32,6 @@ import { ChatSDKError } from "@/lib/errors";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import type { AppUsage } from "@/lib/usage";
 import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
-import { Artifact } from "./artifact";
-import { useDataStream } from "./data-stream-provider";
-import { Messages } from "./messages";
-import { MultimodalInput } from "./multimodal-input";
-import { getChatHistoryPaginationKey } from "./sidebar-history";
-import { toast } from "./toast";
-import type { VisibilityType } from "./visibility-selector";
 
 export function Chat({
   id,

@@ -1,10 +1,14 @@
 import { type Dispatch, memo, type SetStateAction, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { artifactDefinitions, type UIArtifact } from "./artifact";
 import type { ArtifactActionContext } from "./create-artifact";
-import { Button } from "./ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 type ArtifactActionsProps = {
   artifact: UIArtifact;

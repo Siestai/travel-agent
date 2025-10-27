@@ -3,27 +3,27 @@ import type { UseChatHelpers } from "@ai-sdk/react";
 import equal from "fast-deep-equal";
 import { motion } from "framer-motion";
 import { memo, useState } from "react";
-import type { Vote } from "@/lib/db/schema";
-import type { ChatMessage } from "@/lib/types";
-import { cn, sanitizeText } from "@/lib/utils";
-import { useDataStream } from "./data-stream-provider";
-import { DocumentToolResult } from "./document";
-import { DocumentPreview } from "./document-preview";
-import { MessageContent } from "./elements/message";
-import { Response } from "./elements/response";
+import { useDataStream } from "@/components/data-stream-provider";
+import { DocumentToolResult } from "@/components/document/document";
+import { DocumentPreview } from "@/components/document/document-preview";
+import { MessageContent } from "@/components/elements/message";
+import { Response } from "@/components/elements/response";
 import {
   Tool,
   ToolContent,
   ToolHeader,
   ToolInput,
   ToolOutput,
-} from "./elements/tool";
-import { SparklesIcon } from "./icons";
+} from "@/components/elements/tool";
+import { SparklesIcon } from "@/components/icons";
+import { PreviewAttachment } from "@/components/preview-attachment";
+import { Weather } from "@/components/weather";
+import type { Vote } from "@/lib/db/schema";
+import type { ChatMessage } from "@/lib/types";
+import { cn, sanitizeText } from "@/lib/utils";
 import { MessageActions } from "./message-actions";
 import { MessageEditor } from "./message-editor";
 import { MessageReasoning } from "./message-reasoning";
-import { PreviewAttachment } from "./preview-attachment";
-import { Weather } from "./weather";
 
 const PurePreviewMessage = ({
   chatId,

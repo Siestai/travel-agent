@@ -2,6 +2,8 @@
 
 import { ChevronDown, Edit } from "lucide-react";
 import { useState } from "react";
+import { HousingDataView } from "@/components/data/housing-data-view";
+import { TransportationDataView } from "@/components/data/transportation-data-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,8 +13,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import type { ParsedDocument } from "@/lib/db/schema";
-import { HousingDataView } from "./housing-data-view";
-import { TransportationDataView } from "./transportation-data-view";
 
 type SerializedParsedDocument = Omit<
   ParsedDocument,
