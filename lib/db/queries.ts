@@ -1008,6 +1008,32 @@ export async function getInngestStatusByJobId({ jobId }: { jobId: string }) {
   }
 }
 
+export async function getActiveParsingJobsForUser({
+  userId,
+}: {
+  userId: string;
+}) {
+  try {
+    const results = await db
+      .select()
+      .from(inngestStatus)
+      .where(
+        and(
+          eq(inngestStatus.userId, userId),
+          eq(inngestStatus.jobType, "parse_document"),
+          inArray(inngestStatus.status, ["pending", "running"])
+        )
+      )
+      .orderBy(inngestStatus.updatedAt);
+    return results;
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get active parsing jobs"
+    );
+  }
+}
+
 // Parsed document queries
 
 export async function saveParsedDocument({

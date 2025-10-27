@@ -28,6 +28,38 @@ export function ParseDocumentButton({
   const [jobId, setJobId] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState("ollama-qwen3-32b");
 
+  // Check for active parsing jobs on mount
+  useEffect(() => {
+    const checkActiveJobs = async () => {
+      try {
+        const response = await fetch("/api/parser/active-jobs");
+        if (response.ok) {
+          const data = await response.json();
+          const jobs = data.jobs || [];
+
+          // Find job for this file
+          const jobForFile = jobs.find(
+            (job: { metadata?: { driveFileId?: string } }) =>
+              job.metadata?.driveFileId === driveFileId
+          );
+
+          if (jobForFile) {
+            setJobId(jobForFile.jobId);
+            setStatus(
+              jobForFile.status === "running" || jobForFile.status === "pending"
+                ? "parsing"
+                : status
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error checking active jobs:", error);
+      }
+    };
+
+    checkActiveJobs();
+  }, [driveFileId, status]);
+
   useEffect(() => {
     if (!jobId || status === "completed" || status === "failed") {
       return;

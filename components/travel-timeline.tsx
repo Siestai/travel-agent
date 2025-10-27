@@ -14,6 +14,7 @@ type TravelNode = {
   checkOut?: string;
   documentId: string;
   documentTitle: string;
+  driveFileId: string;
   departureTime?: string;
   arrivalTime?: string;
 };

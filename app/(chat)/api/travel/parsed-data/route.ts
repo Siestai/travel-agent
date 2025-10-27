@@ -16,6 +16,7 @@ type EnrichedLocation = {
   checkOut?: string;
   documentId: string;
   documentTitle: string;
+  driveFileId: string;
   departureTime?: string;
   arrivalTime?: string;
 };
@@ -51,6 +52,7 @@ function enrichParsedData(
         checkOut: checkOutDate,
         documentId: parsedDoc.id,
         documentTitle: fileName,
+        driveFileId: parsedDoc.driveFileId,
       });
     }
   } else if (parsedDoc.documentType === "transportation") {
@@ -87,6 +89,7 @@ function enrichParsedData(
         departureTime: departureDateTime,
         documentId: parsedDoc.id,
         documentTitle: fileName,
+        driveFileId: parsedDoc.driveFileId,
       });
       fromNodeId = `node_${parsedDoc.id}_departure`;
     }
@@ -108,6 +111,7 @@ function enrichParsedData(
         arrivalTime: arrivalDateTime,
         documentId: parsedDoc.id,
         documentTitle: fileName,
+        driveFileId: parsedDoc.driveFileId,
       });
       toNodeId = `node_${parsedDoc.id}_arrival`;
     }
