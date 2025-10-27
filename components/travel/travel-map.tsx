@@ -8,7 +8,7 @@ import {
   Polyline,
 } from "@react-google-maps/api";
 import { ExternalLink } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { TravelConnection } from "@/lib/types/travel";
 
@@ -72,7 +72,12 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
   const [selectedConnection, setSelectedConnection] =
     useState<RouteLine | null>(null);
   const [mapCenter, setMapCenter] = useState({ lat: 41.2753, lng: 28.7519 });
-  const [showAnimation, setShowAnimation] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const animationSpeed = 2000; // milliseconds per step
+  const [visibleLines, setVisibleLines] = useState<Set<string>>(new Set());
+  const [visibleMarkers, setVisibleMarkers] = useState<Set<string>>(new Set());
+  const animationRef = useRef<NodeJS.Timeout | null>(null);
   const [userLocation, setUserLocation] = useState<{
     lat: number;
     lng: number;
@@ -133,6 +138,12 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
     }
     setRouteLines(lines);
 
+    // If not animating, show all lines and markers
+    if (!isAnimating) {
+      setVisibleLines(new Set(lines.map((line) => line.connection.id)));
+      setVisibleMarkers(new Set(validMarkers.map((m) => m.id)));
+    }
+
     // Calculate center from all markers
     if (validMarkers.length > 0) {
       const avgLat =
@@ -143,7 +154,122 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
         validMarkers.length;
       setMapCenter({ lat: avgLat, lng: avgLng });
     }
-  }, [nodes, connections]);
+  }, [nodes, connections, isAnimating]);
+
+  // Build journey steps for animation
+  const journeySteps = useMemo(() => {
+    if (markers.length === 0 || routeLines.length === 0) {
+      return [];
+    }
+
+    // Create a map of nodes
+    const nodeMap = new Map(markers.map((m) => [m.id, m]));
+
+    // Find the starting point (node with no incoming connections or first node)
+    const hasIncoming = new Set(routeLines.map((line) => line.connection.to));
+    const startNode = markers.find((m) => !hasIncoming.has(m.id)) || markers[0];
+
+    const steps: Array<{
+      visibleMarkers: string[];
+      visibleLines: string[];
+      center: { lat: number; lng: number };
+      zoom?: number;
+    }> = [];
+
+    // Follow the journey step by step
+    let currentNode = startNode;
+    const visited = new Set<string>();
+    const completedLines = new Set<string>();
+
+    // First step: show starting point
+    steps.push({
+      visibleMarkers: [startNode.id],
+      visibleLines: [],
+      center: startNode.coordinates,
+      zoom: 10,
+    });
+
+    visited.add(startNode.id);
+
+    // Iteratively find and add next connections
+    while (true) {
+      const nextLine = routeLines.find(
+        (line) =>
+          line.connection.from === currentNode.id &&
+          !completedLines.has(line.connection.id)
+      );
+
+      if (!nextLine) {
+        break;
+      }
+
+      const toNode = nodeMap.get(nextLine.connection.to);
+      if (!toNode) {
+        break;
+      }
+
+      completedLines.add(nextLine.connection.id);
+
+      // Add step for this connection
+      visited.add(toNode.id);
+      steps.push({
+        visibleMarkers: Array.from(visited),
+        visibleLines: Array.from(completedLines),
+        center: toNode.coordinates,
+        zoom: 8,
+      });
+
+      currentNode = toNode;
+    }
+
+    return steps;
+  }, [markers, routeLines]);
+
+  // Handle animation
+  useEffect(() => {
+    if (isAnimating && journeySteps.length > 0) {
+      if (currentStep >= journeySteps.length) {
+        // Animation complete
+        setIsAnimating(false);
+        setCurrentStep(0);
+        // Show all at the end
+        setVisibleLines(new Set(routeLines.map((line) => line.connection.id)));
+        setVisibleMarkers(new Set(markers.map((m) => m.id)));
+      }
+      if (currentStep < journeySteps.length) {
+        const step = journeySteps[currentStep];
+        setVisibleLines(new Set(step.visibleLines));
+        setVisibleMarkers(new Set(step.visibleMarkers));
+        setMapCenter(step.center);
+
+        // Move to next step after delay
+        animationRef.current = setTimeout(() => {
+          setCurrentStep((prev) => prev + 1);
+        }, animationSpeed);
+      }
+    }
+
+    return () => {
+      if (animationRef.current) {
+        clearTimeout(animationRef.current);
+      }
+    };
+  }, [isAnimating, currentStep, journeySteps, markers, routeLines]);
+
+  const handleStartAnimation = () => {
+    setIsAnimating(true);
+    setCurrentStep(0);
+  };
+
+  const handleStopAnimation = () => {
+    setIsAnimating(false);
+    setCurrentStep(0);
+    setVisibleLines(new Set(routeLines.map((line) => line.connection.id)));
+    setVisibleMarkers(new Set(markers.map((m) => m.id)));
+    if (animationRef.current) {
+      clearTimeout(animationRef.current);
+    }
+  };
 
   // Close modal when clicking on the map
   const handleMapClick = () => {
@@ -178,13 +304,21 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
   return (
     <div className="relative h-full w-full">
       <div className="absolute top-4 right-4 z-10 flex gap-2">
-        <Button
-          onClick={() => setShowAnimation(!showAnimation)}
-          size="sm"
-          variant="outline"
-        >
-          {showAnimation ? "Stop Animation" : "Animate Journey"}
-        </Button>
+        {isAnimating && (
+          <Button onClick={handleStopAnimation} size="sm" variant="destructive">
+            Stop Animation ({currentStep}/{journeySteps.length})
+          </Button>
+        )}
+        {!isAnimating && (
+          <Button
+            disabled={journeySteps.length === 0}
+            onClick={handleStartAnimation}
+            size="sm"
+            variant="outline"
+          >
+            🎬 Animate Journey
+          </Button>
+        )}
         {userLocation && (
           <Button
             onClick={handleCenterOnUser}
@@ -213,35 +347,45 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
           zoom={markers.length > 1 ? 4 : 10}
         >
           {/* Render route lines */}
-          {routeLines.map((line) => (
-            <Polyline
-              key={line.connection.id}
-              onClick={() => {
-                setSelectedConnection(line);
-                setSelectedMarker(null);
-              }}
-              options={{
-                strokeColor: "#3b82f6",
-                strokeWeight: 3,
-                strokeOpacity: 0.6,
-                icons: showAnimation
-                  ? [
+          {routeLines.map(
+            (line) =>
+              visibleLines.has(line.connection.id) && (
+                <Polyline
+                  key={line.connection.id}
+                  onClick={() => {
+                    setSelectedConnection(line);
+                    setSelectedMarker(null);
+                  }}
+                  options={{
+                    strokeColor:
+                      isAnimating && visibleLines.has(line.connection.id)
+                        ? "#10b981"
+                        : "#3b82f6",
+                    strokeWeight:
+                      isAnimating && visibleLines.has(line.connection.id)
+                        ? 4
+                        : 3,
+                    strokeOpacity: 0.7,
+                    icons: [
                       {
                         icon: {
-                          path: "M 0,-1 0,1",
-                          strokeColor: "#3b82f6",
-                          strokeWeight: 2,
-                          scale: 2,
+                          path: "M 0,-2 0,2 M -1.5,0.5 0,-2 1.5,0.5",
+                          strokeColor:
+                            isAnimating && visibleLines.has(line.connection.id)
+                              ? "#10b981"
+                              : "#3b82f6",
+                          strokeWeight: 3,
+                          scale: 5,
                         },
-                        offset: "0",
-                        repeat: "20px",
+                        offset: "100",
+                        repeat: "30px",
                       },
-                    ]
-                  : undefined,
-              }}
-              path={[line.from, line.to]}
-            />
-          ))}
+                    ],
+                  }}
+                  path={[line.from, line.to]}
+                />
+              )
+          )}
 
           {/* Render user location marker */}
           {userLocation && (
@@ -266,14 +410,17 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
           )}
 
           {/* Render travel markers */}
-          {markers.map((marker) => (
-            <Marker
-              key={marker.id}
-              label={getMarkerIcon(marker.type)}
-              onClick={() => setSelectedMarker(marker)}
-              position={marker.coordinates}
-            />
-          ))}
+          {markers.map(
+            (marker) =>
+              visibleMarkers.has(marker.id) && (
+                <Marker
+                  key={marker.id}
+                  label={getMarkerIcon(marker.type)}
+                  onClick={() => setSelectedMarker(marker)}
+                  position={marker.coordinates}
+                />
+              )
+          )}
 
           {/* Connection info modal */}
           {selectedConnection && (
