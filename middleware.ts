@@ -22,23 +22,30 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Allow access to login page without authentication
+  if (pathname === "/login") {
+    return NextResponse.next();
+  }
+
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
     secureCookie: !isDevelopmentEnvironment,
   });
 
-  if (!token) {
-    const redirectUrl = encodeURIComponent(request.url);
-
+  // Check if user is unauthenticated or is a guest user (guest users should also login)
+  const isGuest = token?.email ? guestRegex.test(token.email) : false;
+  
+  // Redirect unauthenticated users or guest users to login
+  if (!token || isGuest) {
+    const redirectUrl = encodeURIComponent(pathname);
     return NextResponse.redirect(
-      new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url)
+      new URL(`/login?callbackUrl=${redirectUrl}`, request.url)
     );
   }
 
-  const isGuest = guestRegex.test(token?.email ?? "");
-
-  if (token && !isGuest && ["/login", "/register"].includes(pathname)) {
+  // Redirect authenticated users away from login/register pages
+  if (["/login", "/register"].includes(pathname)) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
