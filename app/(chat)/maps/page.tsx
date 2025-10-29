@@ -16,6 +16,10 @@ type TravelNode = {
   documentTitle: string;
   departureTime?: string;
   arrivalTime?: string;
+  price?: number;
+  currency?: string;
+  documentType?: "housing" | "transportation";
+  nodeRole?: "departure" | "arrival";
 };
 
 export default function MapsPage() {

@@ -34,6 +34,7 @@ export const entitlementsByUserType: Record<UserType, Entitlements> = {
       "ollama-gpt-oss-20b",
       "ollama-gpt-oss-120b",
       "ollama-qwen3-32b",
+      "ollama-gemma3-270m",
       "ollama-deepcoder-14b",
       "ollama-phi4-14b",
       "anthropic-claude-3-5-sonnet",

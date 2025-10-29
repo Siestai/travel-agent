@@ -37,6 +37,11 @@ export const chatModels: ChatModel[] = [
     description: "Qwen3 model with 32B parameters via Ollama",
   },
   {
+    id: "ollama-gemma3-270m",
+    name: "Gemma 3 270M",
+    description: "Lightweight Gemma 3 model (270M) via Ollama for fast parsing",
+  },
+  {
     id: "ollama-deepcoder-14b",
     name: "DeepCoder 14B",
     description: "Code generation model with 14B parameters via Ollama",

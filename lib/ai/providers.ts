@@ -49,6 +49,7 @@ export const myProvider = isTestEnvironment
         "ollama-gpt-oss-20b": customOllama("gpt-oss:20b"),
         "ollama-gpt-oss-120b": customOllama("gpt-oss:120b"),
         "ollama-qwen3-32b": customOllama("qwen3:32b"),
+        "ollama-gemma3-270m": customOllama("gemma3:270m"),
         "ollama-deepcoder-14b": customOllama("deepcoder:14b"),
         "ollama-phi4-14b": customOllama("phi4:14b"),
 
