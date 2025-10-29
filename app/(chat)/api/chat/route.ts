@@ -146,6 +146,15 @@ export async function POST(request: Request) {
     const messagesFromDb = await getMessagesByChatId({ id });
     const uiMessages = [...convertToUIMessages(messagesFromDb), message];
 
+    // For small Ollama models like gemma3:270m, avoid sending images/tools
+    const isGemma3Small = selectedChatModel === "ollama-gemma3-270m";
+    const textOnlyUiMessages = isGemma3Small
+      ? uiMessages.map((m) => ({
+          ...m,
+          parts: m.parts.filter((p) => p.type === "text"),
+        }))
+      : uiMessages;
+
     const { longitude, latitude, city, country } = geolocation(request);
 
     const requestHints: RequestHints = {
@@ -178,10 +187,10 @@ export async function POST(request: Request) {
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel, requestHints }),
-          messages: convertToModelMessages(uiMessages),
+          messages: convertToModelMessages(textOnlyUiMessages),
           stopWhen: stepCountIs(5),
           experimental_activeTools:
-            selectedChatModel === "chat-model-reasoning"
+            selectedChatModel === "chat-model-reasoning" || isGemma3Small
               ? []
               : [
                   "getWeather",
@@ -190,15 +199,17 @@ export async function POST(request: Request) {
                   "requestSuggestions",
                 ],
           experimental_transform: smoothStream({ chunking: "word" }),
-          tools: {
-            getWeather,
-            createDocument: createDocument({ session, dataStream }),
-            updateDocument: updateDocument({ session, dataStream }),
-            requestSuggestions: requestSuggestions({
-              session,
-              dataStream,
-            }),
-          },
+          tools: isGemma3Small
+            ? {}
+            : {
+                getWeather,
+                createDocument: createDocument({ session, dataStream }),
+                updateDocument: updateDocument({ session, dataStream }),
+                requestSuggestions: requestSuggestions({
+                  session,
+                  dataStream,
+                }),
+              },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
             functionId: "stream-text",

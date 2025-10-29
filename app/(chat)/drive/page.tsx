@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { DriveDashboard } from "@/components/drive/drive-dashboard";
+import { Loader } from "@/components/elements/loader";
 
 export const metadata: Metadata = {
   title: "Google Drive",
@@ -9,7 +10,13 @@ export const metadata: Metadata = {
 
 export default function DrivePage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex h-full min-h-[60vh] w-full items-center justify-center p-6">
+          <Loader size={24} className="text-muted-foreground" />
+        </div>
+      }
+    >
       <DriveDashboard />
     </Suspense>
   );

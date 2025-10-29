@@ -3,7 +3,7 @@
 import {
   GoogleMap,
   InfoWindow,
-  LoadScript,
+  useJsApiLoader,
   Marker,
   Polyline,
 } from "@react-google-maps/api";
@@ -221,6 +221,11 @@ const getMarkerIcon = (type: string): string | undefined => {
 };
 
 export function TravelMap({ nodes, connections }: TravelMapProps) {
+  const { isLoaded } = useJsApiLoader({
+    id: "google-map-script",
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+  });
+
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [routeLines, setRouteLines] = useState<RouteLine[]>([]);
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
@@ -490,10 +495,9 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
         </Button>
       </div>
 
-      <LoadScript
-        googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}
-        loadingElement={<div className="h-full w-full" />}
-      >
+      {!isLoaded ? (
+        <div className="h-full w-full" />
+      ) : (
         <GoogleMap
           center={mapCenter}
           mapContainerStyle={mapContainerStyle}
@@ -851,7 +855,7 @@ export function TravelMap({ nodes, connections }: TravelMapProps) {
             </InfoWindow>
           )}
         </GoogleMap>
-      </LoadScript>
+      )}
     </div>
   );
 }
