@@ -1,9 +1,9 @@
-import { cookies } from "next/headers";
 import Script from "next/script";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DataStreamProvider } from "@/components/data-stream-provider";
 import { FloatingChat } from "@/components/floating-chat";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarAlwaysOpen } from "@/components/sidebar/sidebar-always-open";
+import { SidebarInset } from "@/components/ui/sidebar";
 import { auth } from "../(auth)/auth";
 
 export const experimental_ppr = true;
@@ -13,8 +13,7 @@ export default async function Layout({
 }: {
   children: React.ReactNode;
 }) {
-  const [session, cookieStore] = await Promise.all([auth(), cookies()]);
-  const isCollapsed = cookieStore.get("sidebar_state")?.value !== "true";
+  const session = await auth();
 
   return (
     <>
@@ -23,10 +22,10 @@ export default async function Layout({
         strategy="beforeInteractive"
       />
       <DataStreamProvider>
-        <SidebarProvider defaultOpen={!isCollapsed}>
+        <SidebarAlwaysOpen>
           <AppSidebar user={session?.user} />
           <SidebarInset>{children}</SidebarInset>
-        </SidebarProvider>
+        </SidebarAlwaysOpen>
         <FloatingChat />
       </DataStreamProvider>
     </>
